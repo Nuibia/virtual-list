@@ -14,6 +14,7 @@ export default function useFrameWheel(
   isScrollAtBottom: boolean,
   onWheelDelta: (offset: number) => void,
 ): [(e: WheelEvent) => void, (e: FireFoxDOMMouseScrollEvent) => void] {
+  // 元素滚动高度
   const offsetRef = useRef(0);
   const nextFrameRef = useRef<number>(null);
 
@@ -25,15 +26,18 @@ export default function useFrameWheel(
   const originScroll = useOriginScroll(isScrollAtTop, isScrollAtBottom);
 
   function onWheel(event: WheelEvent) {
+    console.log('event',event)
     if (!inVirtual) return;
 
     raf.cancel(nextFrameRef.current);
 
     const { deltaY } = event;
+    // 获取到滚轮滑动距离，并认为该距离是元素滚动高度 每次滚动的距离之和
     offsetRef.current += deltaY;
     wheelValueRef.current = deltaY;
 
     // Do nothing when scroll at the edge, Skip check when is in scroll
+    // ???
     if (originScroll(deltaY)) return;
 
     // Proxy of scroll events
@@ -44,6 +48,7 @@ export default function useFrameWheel(
     nextFrameRef.current = raf(() => {
       // Patch a multiple for Firefox to fix wheel number too small
       // ref: https://github.com/ant-design/ant-design/issues/26372#issuecomment-679460266
+      // isMouseScrollRef.current ！= false 是火狐 
       const patchMultiple = isMouseScrollRef.current ? 10 : 1;
       onWheelDelta(offsetRef.current * patchMultiple);
       offsetRef.current = 0;

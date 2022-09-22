@@ -10,23 +10,26 @@ export default function useHeights<T>(
   onItemAdd?: (item: T) => void,
   onItemRemove?: (item: T) => void,
 ): [(item: T, instance: HTMLElement) => void, () => void, CacheMap, number] {
+  //是否更新
   const [updatedMark, setUpdatedMark] = React.useState(0);
+  // 一个存储了当前所有可视区域的dom的map，
   const instanceRef = useRef(new Map<React.Key, HTMLElement>());
+  // value是每一个dom的高，key是每一个dom的key
   const heightsRef = useRef(new CacheMap());
   const collectRafRef = useRef<number>();
-
+//FIXME:干啥用的？
   function cancelRaf() {
     raf.cancel(collectRafRef.current);
   }
-
+  // TODO: 滚动条滚动时，该方法触发
   function collectHeight() {
     cancelRaf();
-
     collectRafRef.current = raf(() => {
       instanceRef.current.forEach((element, key) => {
         if (element && element.offsetParent) {
           const htmlElement = findDOMNode<HTMLElement>(element);
           const { offsetHeight } = htmlElement;
+          // 计算每一个item的实际高度，如果不等于当前dom的高度，则直接赋值
           if (heightsRef.current.get(key) !== offsetHeight) {
             heightsRef.current.set(key, htmlElement.offsetHeight);
           }
@@ -37,15 +40,26 @@ export default function useHeights<T>(
       setUpdatedMark((c) => c + 1);
     });
   }
-
+  /**
+   * 
+   * @param item 当前item的值
+   * @param instance 当前渲染的dom元素
+   * @return 通过该方法进行删除和添加
+   */
+  //FIXME:？？？
+  // TODO:通过key来判断当前可视区域dom的增或删，如果instance为null，则说明该dom在useChildren中没有了，删除；
+  // 如果instance不为null，索命在useChildren中该dom被渲染了，需要添加。
   function setInstanceRef(item: T, instance: HTMLElement) {
     const key = getKey(item);
+    console.log('instance', instance)
     const origin = instanceRef.current.get(key);
 
     if (instance) {
+      // 需要添加的dom元素
       instanceRef.current.set(key, instance);
       collectHeight();
     } else {
+      //不需要渲染的dom元素删除
       instanceRef.current.delete(key);
     }
 
